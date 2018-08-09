@@ -13,23 +13,23 @@
 namespace gt = ::gridtools;
 namespace py = ::pybind11;
 
-namespace {{ module_name }} {
+namespace gtcomputation_kji {
 
 namespace {
 
-struct {{ stencil_name }}_1_functor {
+struct diag_diff_1_functor {
     using out = gt::accessor<0, gt::enumtype::inout>;
-    using in = gt::accessor<1, gt::enumtype::in, gt::extent<-1, 0, -1, 0>>;
+    using in = gt::accessor<1, gt::enumtype::in>;
     using arg_list = boost::mpl::vector<out, in>;
 
     template <typename Evaluation>
-    GT_FUNCTION static void Do(Evaluation &eval) {
+    GT_FUNCTION static void Do(Evaluation& eval) {
         eval(out()) = eval(in(-1, -1, 0));
     }
 };
 
-static constexpr gt::uint_t halo_size = {{ halo_size }};
-using float_t = {{ float_t }};
+static constexpr gt::uint_t halo_size = 1;
+using float_t = double;
 
 using backend_t = gt::backend<gt::platform::x86, gt::grid_type::structured,
                               gt::strategy::block>;
@@ -50,22 +50,21 @@ auto make_grid(const std::array<gt::uint_t, 3>& size)
 
 using storage_info_t =
     gt::storage_traits<backend_t::backend_id_t>::custom_layout_storage_info_t<
-        0, typename gt::get_layout<3, true>::type,
+        0, typename gt::get_layout<3, false>::type,
         gt::halo<halo_size, halo_size, 0>>;
 using data_store_t =
     gt::storage_traits<backend_t::backend_id_t>::data_store_t<float_t,
                                                               storage_info_t>;
-{% for id, param in input_params -%}
-using p_{{ param}} = gt::arg<{{ id }}, data_store_t>;
-{% endfor %}
+using p_f_out = gt::arg<0, data_store_t>;
+using p_f_in = gt::arg<1, data_store_t>;
 
 template <typename Grid>
 auto make_computation(const Grid& grid)
     GT_AUTO_RETURN(gt::make_computation<backend_t>(
         grid,
         gt::make_multistage(gt::enumtype::execute<gt::enumtype::forward>(),
-                            gt::make_stage<{{ stencil_name }}_1_functor>(
-                                p_f_out(), p_f_in()))));
+                            gt::make_stage<diag_diff_1_functor>(p_f_out(),
+                                                                p_f_in()))));
 
 data_store_t make_data_store(py::buffer& b,
                              const std::array<gt::uint_t, 3>& outer_size,
@@ -121,8 +120,7 @@ data_store_t make_data_store(py::buffer& b,
 class GTComputation {
    public:
     GTComputation(std::array<gt::uint_t, 3> size, gt::uint_t halo)
-        : size_(size),
-          computation_(make_computation(make_grid(size))) {
+        : size_(size), computation_(make_computation(make_grid(size))) {
         // TODO the halo_size will not be compile-time anymore at a certain
         // point. Currently we just want the user to pass it to verify if he is
         // really doing what he intends to do. In fact, I think we don't care
@@ -138,46 +136,29 @@ class GTComputation {
         assert(halo == halo_size);
     }
 
-    {% set comma = joiner(",") -%}
-    void run({%- for id, param in input_params -%}
-             {{- comma() }}
-             py::buffer b_{{ param }}
-             {{- comma() }} const std::array<gt::uint_t, 3>& {{ param }}_origin
-             {%- endfor -%}) {
+    void run(py::buffer b_f_out, const std::array<gt::uint_t, 3>& f_out_origin,
+             py::buffer b_f_in, const std::array<gt::uint_t, 3>& f_in_origin) {
         // Initialize data stores from input buffers
-        {% for id, param in input_params -%}
-        auto ds_{{ param }} = make_data_store(b_{{ param }}, size_, {{ param }}_origin);
-        {% endfor -%}
-
+        auto ds_f_out = make_data_store(b_f_out, size_, f_out_origin);
+        auto ds_f_in = make_data_store(b_f_in, size_, f_in_origin);
         // Run computation and wait for the synchronization of the output stores
-        {% set comma = joiner(", ") -%}
-        computation_.run({%- for id, param in input_params -%}
-                         {{ comma() }}p_{{ param }}() = ds_{{ param }}
-                         {%- endfor %});
+        computation_.run(p_f_out() = ds_f_out, p_f_in() = ds_f_in);
         computation_.sync_bound_data_stores();
     }
 
    private:
-    gt::computation<void,
-        {%- set comma = joiner(", ") -%}
-        {%- for id, param in input_params -%}
-        {{ comma() }} p_{{ param }}
-        {%- endfor -%}
-        > computation_;
+    gt::computation<void, p_f_out, p_f_in> computation_;
     const std::array<gt::uint_t, 3> size_;
 };
 
-}  // namespace {{ module_name }}
+}  // namespace gtcomputation
 
 static constexpr std::array<gt::uint_t, 3> zero_origin{0, 0, 0};
-PYBIND11_MODULE({{ module_name }}, m) {
-    py::class_<{{ module_name }}::GTComputation>(m, "GTComputation")
+PYBIND11_MODULE(gtcomputation_kji, m) {
+    py::class_<gtcomputation_kji::GTComputation>(m, "GTComputation")
         .def(py::init<std::array<gt::uint_t, 3>, gt::uint_t>(),
              py::arg("shape"), py::arg("halo"))
-        .def("run", &{{ module_name }}::GTComputation::run,
-             {%- set comma = joiner(",") -%}
-             {%- for id, param in input_params -%}
-             {{- comma()}}
-             py::arg("{{ param }}") {{- comma() }} py::arg("{{ param }}_origin") = zero_origin
-             {%- endfor -%});
+        .def("run", &gtcomputation_kji::GTComputation::run, py::arg("f_out"),
+             py::arg("f_out_origin") = zero_origin, py::arg("f_in"),
+             py::arg("f_in_origin") = zero_origin);
 }

@@ -1,5 +1,11 @@
 all: test
 
+gtcomputation_kji.o: gtcomputation_kji.cpp
+	g++ -o gtcomputation_kji.o gtcomputation_kji.cpp -std=c++11 -isystem /usr/include/python3.7m -isystem /home/lukas/documents/work/gridtools/include -isystem /home/lukas/packages/pybind11/2.2.3/include -isystem /home/lukas/packages/boost/1.67/include -c -fPIC
+
+gtcomputation_kji.so: gtcomputation_kji.o
+	g++ -shared -o gtcomputation_kji.so gtcomputation_kji.o -lpython3.7m -fPIC
+
 gtcomputation.cpp: gtcomputation.cpp.in gen_cpp.py
 	python gen_cpp.py
 
@@ -16,6 +22,6 @@ copy_simple.so: copy_simple.o
 	g++ -shared -o copy_simple.so copy_simple.o -lpython3.7m -fPIC
 
 .PHONY: test
-test: gtcomputation.so test.py copy_simple.so
+test: gtcomputation.so test.py copy_simple.so gtcomputation_kji.so
 	pytest -v test.py
 
