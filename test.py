@@ -1,9 +1,21 @@
 import gtcomputation as gtcomp_ijk
 import gtcomputation_kji as gtcomp_kji
+import gtboundary
 import copy_simple
 import numpy as np
 
 import pytest
+
+def get_domain_masks(size, start, stop, halo):
+    compute_domain = np.zeros(shape=size, dtype='bool')
+    total_domain = np.zeros(shape=size, dtype='bool')
+
+    compute_domain[start[0]:stop[0], start[1]:stop[1], start[2]:stop[2]] = True
+    total_domain[start[0]-halo:stop[0]+halo, start[1]-halo:stop[1]+halo, start[2]:stop[2]] = True
+    halo_domain = ~compute_domain & total_domain
+    outer_domain = ~total_domain
+
+    return compute_domain, halo_domain, outer_domain, total_domain
 
 def create_numbered(shape, dtype, inversed = False):
     size = shape[0] * shape[1] * shape[2]
@@ -171,6 +183,7 @@ def test_sub_domain_with_nonzero_origin_shift_with_kji(domain, subdomain, origin
 
     start_out = [origin_out[0] + halo, origin_out[1] + halo, origin_out[2]]
     stop_out = [origin_out[0] + subdomain[0] - halo, origin_out[1] + subdomain[1] - halo, origin_out[2] + subdomain[2]]
+
     assert np.all(f_out[start_out[0]:stop_out[0], start_out[1]:stop_out[1], start_out[2]:stop_out[2]] \
                   == f_in[start_in[0]-1:stop_in[0]-1, start_in[1]-1:stop_in[1]-1, start_in[2]:stop_in[2]])
     assert np.all(f_out[:start_out[0], :, :] == bwd[:start_out[0], :, :])
@@ -179,3 +192,33 @@ def test_sub_domain_with_nonzero_origin_shift_with_kji(domain, subdomain, origin
     assert np.all(f_out[stop_out[0]:, :, :] == bwd[stop_out[0]:, :, :])
     assert np.all(f_out[:, stop_out[1]:, :] == bwd[:, stop_out[1]:, :])
     assert np.all(f_out[:, :, stop_out[2]:] == bwd[:, :, stop_out[2]:])
+
+@pytest.mark.parametrize("domain,subdomain,origin_in,origin_out", [
+    ([10, 20, 30], [5, 6, 7], [3, 4, 5], [5, 4, 3]),
+    ([10, 20, 30], [5, 6, 7], [4, 3, 2], [3, 4, 5]),
+])
+def test_boundary_simple(domain, subdomain, origin_in, origin_out):
+    fwd = create_numbered(domain, np.double, inversed=False)
+    bwd = create_numbered(domain, np.double, inversed=True)
+
+    f_in = create_numbered(domain, np.double, inversed=False)
+    f_out = create_numbered(domain, np.double, inversed=True)
+    halo = 1
+
+    boundary = gtboundary.GTCopyBoundary(shape=subdomain, halo=halo)
+    boundary.run(f_out=f_out, f_in=f_in, f_out_origin=origin_out, f_in_origin=origin_in)
+
+    start_in = [origin_in[0] + halo, origin_in[1] + halo, origin_in[2]]
+    stop_in = [origin_in[0] + subdomain[0] - halo, origin_in[1] + subdomain[1] - halo, origin_in[2] + subdomain[2]]
+
+    start_out = [origin_out[0] + halo, origin_out[1] + halo, origin_out[2]]
+    stop_out = [origin_out[0] + subdomain[0] - halo, origin_out[1] + subdomain[1] - halo, origin_out[2] + subdomain[2]]
+
+    in_compute_domain, in_halo_domain, in_outer_domain, in_total_domain = get_domain_masks(f_in.shape, start_in, stop_in, halo)
+    out_compute_domain, out_halo_domain, out_outer_domain, out_total_domain = get_domain_masks(f_out.shape, start_out, stop_out, halo)
+
+    assert np.all(f_in == fwd)
+
+    assert np.all(f_out[np.where(out_compute_domain)] == bwd[np.where(out_compute_domain)])
+    assert np.all(f_out[np.where(out_outer_domain)] == bwd[np.where(out_outer_domain)])
+    assert np.all(f_out[np.where(out_halo_domain)] == fwd[np.where(in_halo_domain)])
