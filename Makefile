@@ -27,7 +27,16 @@ gtboundary.o: gtboundary.cpp
 gtboundary.so: gtboundary.o
 	g++ -shared -o gtboundary.so gtboundary.o -lpython3.7m -fPIC
 
+gtcomputation_struct.o: gtcomputation_struct.cpp
+	g++ -o gtcomputation_struct.o gtcomputation_struct.cpp -std=c++11 -isystem /usr/include/python3.7m -isystem /home/lukas/documents/work/gridtools3/include -isystem /home/lukas/packages/pybind11/2.2.3/include -isystem /home/lukas/packages/boost/1.67/include -c -fPIC
+
+gtcomputation_struct.so: gtcomputation_struct.o
+	g++ -shared -o gtcomputation_struct.so gtcomputation_struct.o -lpython3.7m -fPIC
+
 .PHONY: test
-test: gtcomputation.so test.py copy_simple.so gtcomputation_kji.so gtboundary.so
+test: gtcomputation.so test.py copy_simple.so gtcomputation_kji.so gtboundary.so gtcomputation_struct.so
 	pytest -v test.py
 
+.PHONY: clean
+clean:
+	rm -f gtcomputation.so copy_simple.so gtcomputation_kji.so gtboundary.so gtcomputation_struct.so gtcomputation.o copy_simple.o gtcomputation_kji.o gtcomputation_struct.o gtboundary.o gtcomputation.cpp

@@ -1,8 +1,10 @@
 import gtcomputation as gtcomp_ijk
 import gtcomputation_kji as gtcomp_kji
+import gtcomputation_struct as gtcomp_struct
 import gtboundary
 import copy_simple
 import numpy as np
+import itertools
 
 import pytest
 
@@ -222,3 +224,36 @@ def test_boundary_simple(domain, subdomain, origin_in, origin_out):
     assert np.all(f_out[np.where(out_compute_domain)] == bwd[np.where(out_compute_domain)])
     assert np.all(f_out[np.where(out_outer_domain)] == bwd[np.where(out_outer_domain)])
     assert np.all(f_out[np.where(out_halo_domain)] == fwd[np.where(in_halo_domain)])
+
+@pytest.mark.parametrize("domain", [
+    ([10, 20, 30]),
+    ([5, 3, 8]),
+    ([3, 5, 8]),
+    ([3, 5, 1]),
+])
+def test_computation_struct(domain):
+
+    dtype = np.dtype([('x', np.float64), ('y', np.float64)])
+    halo = 1
+
+    calc_domain = domain
+    f_in = np.zeros(domain, dtype=dtype)
+    f_ref = np.zeros(domain, dtype=dtype)
+    f_out = np.zeros(domain, dtype=dtype)
+    for i, j, k in itertools.product(range(domain[0]), range(domain[1]), range(domain[2])):
+        if i < halo or i >= calc_domain[0] - 1 or j < halo or j >= calc_domain[1] - 1:
+            print (i, j)
+            f_ref[i, j, k]['x'] = f_out[i, j, k]['x'] = 2 * i - j + k
+            f_ref[i, j, k]['y'] = f_out[i, j, k]['y'] = 2 * i + j + k
+        else:
+            f_in[i, j, k]['y'] = f_ref[i, j, k]['x'] = i - j + k
+            f_in[i, j, k]['x'] = f_ref[i, j, k]['y'] = i + j + k
+
+    comp = gtcomp_struct.GTComputationStruct(shape=calc_domain, halo=halo)
+    comp.run(f_out=f_out, f_in=f_in)
+
+    assert np.all(f_out[halo:-halo, halo:-halo, :] == f_ref[halo:-halo, halo:-halo, :])
+    assert np.all(f_out[:halo, :, :] == f_ref[:halo, :, :])
+    assert np.all(f_out[:, :halo, :] == f_ref[:, :halo, :])
+    assert np.all(f_out[-halo:, :, :] == f_ref[-halo:, :, :])
+    assert np.all(f_out[:, -halo:, :] == f_ref[:, -halo:, :])
