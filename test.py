@@ -246,11 +246,13 @@ def test_computation_struct(domain):
             f_ref[i, j, k]['x'] = f_out[i, j, k]['x'] = 2 * i - j + k
             f_ref[i, j, k]['y'] = f_out[i, j, k]['y'] = 2 * i + j + k
         else:
-            f_in[i, j, k]['y'] = f_ref[i, j, k]['x'] = i - j + k
-            f_in[i, j, k]['x'] = f_ref[i, j, k]['y'] = i + j + k
+            f_in[i, j, k]['y'] = i - j + k
+            f_in[i, j, k]['x'] = i + j + k
+            f_ref[i, j, k]['x'] = i - j + k + 1.0
+            f_ref[i, j, k]['y'] = i + j + k + 2.0
 
     comp = gtcomp_struct.GTComputationStruct(shape=calc_domain, halo=halo)
-    comp.run(f_out=f_out, f_in=f_in)
+    comp.run(f_out=f_out, f_in=f_in, x=1, y=2)
 
     assert np.all(f_out[halo:-halo, halo:-halo, :] == f_ref[halo:-halo, halo:-halo, :])
     assert np.all(f_out[:halo, :, :] == f_ref[:halo, :, :])
