@@ -36,7 +36,7 @@ struct revert {
     }
 };
 
-using backend_t = gt::backend<gt::platform::x86, gt::grid_type::structured,
+using backend_t = gt::backend<gt::target::x86, gt::grid_type::structured,
                               gt::strategy::block>;
 
 template <typename T>

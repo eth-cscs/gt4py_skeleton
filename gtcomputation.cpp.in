@@ -31,7 +31,7 @@ struct {{ stencil_name }}_1_functor {
 static constexpr gt::uint_t halo_size = {{ halo_size }};
 using float_t = {{ float_t }};
 
-using backend_t = gt::backend<gt::platform::x86, gt::grid_type::structured,
+using backend_t = gt::backend<gt::target::x86, gt::grid_type::structured,
                               gt::strategy::block>;
 
 gt::halo_descriptor make_halo_descriptor(gt::uint_t outer_size,

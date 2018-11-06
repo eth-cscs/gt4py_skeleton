@@ -31,7 +31,7 @@ struct diag_diff_1_functor {
 static constexpr gt::uint_t halo_size = 1;
 using float_t = double;
 
-using backend_t = gt::backend<gt::platform::x86, gt::grid_type::structured,
+using backend_t = gt::backend<gt::target::x86, gt::grid_type::structured,
                               gt::strategy::block>;
 
 gt::halo_descriptor make_halo_descriptor(gt::uint_t outer_size,
@@ -151,7 +151,7 @@ class GTComputation {
     const std::array<gt::uint_t, 3> size_;
 };
 
-}  // namespace gtcomputation
+}  // namespace gtcomputation_kji
 
 static constexpr std::array<gt::uint_t, 3> zero_origin{0, 0, 0};
 PYBIND11_MODULE(gtcomputation_kji, m) {

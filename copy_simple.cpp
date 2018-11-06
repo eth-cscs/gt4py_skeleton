@@ -1,12 +1,11 @@
 #define STRUCTURED_GRIDS
 #include <pybind11/pybind11.h>
-#include <gridtools/gridtools.hpp>
 #include <gridtools/stencil-composition/stencil-composition.hpp>
 
 namespace py = pybind11;
-using backend_t = gridtools::backend<gridtools::platform::x86,
-                                     gridtools::grid_type::structured,
-                                     gridtools::strategy::block>;
+using backend_t =
+    gridtools::backend<gridtools::target::x86, gridtools::grid_type::structured,
+                       gridtools::strategy::block>;
 constexpr int ndims = 3;
 using float_type = double;
 // we can use halo = 0. This is redundant here because we use an external
