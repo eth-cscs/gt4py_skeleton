@@ -45,8 +45,8 @@ def test_copy_simple():
 def test_whole_domain(domain):
     calc_domain = domain
     f_in = create_numbered(domain, np.double, inversed=False)
-    bwd = create_numbered(domain, np.double, inversed=True)
-    f_out = create_numbered(domain, np.double, inversed=True)
+    bwd = create_numbered(domain, np.float32, inversed=True)
+    f_out = create_numbered(domain, np.float32, inversed=True)
     halo = 1
 
     comp = gtcomp_ijk.GTComputation(shape=calc_domain, halo=halo)
@@ -67,8 +67,8 @@ def test_whole_domain(domain):
 ])
 def test_sub_domain_with_zero_origin(domain, subdomain):
     f_in = create_numbered(domain, np.double, inversed=False)
-    bwd = create_numbered(domain, np.double, inversed=True)
-    f_out = create_numbered(domain, np.double, inversed=True)
+    bwd = create_numbered(domain, np.float32, inversed=True)
+    f_out = create_numbered(domain, np.float32, inversed=True)
     halo = 1
 
     comp = gtcomp_ijk.GTComputation(shape=subdomain, halo=halo)
@@ -94,8 +94,8 @@ def test_sub_domain_with_zero_origin(domain, subdomain):
 ])
 def test_sub_domain_with_nonzero_origin_noshift(domain, subdomain, origin):
     f_in = create_numbered(domain, np.double, inversed=False)
-    bwd = create_numbered(domain, np.double, inversed=True)
-    f_out = create_numbered(domain, np.double, inversed=True)
+    bwd = create_numbered(domain, np.float32, inversed=True)
+    f_out = create_numbered(domain, np.float32, inversed=True)
     halo = 1
 
     comp = gtcomp_ijk.GTComputation(shape=subdomain, halo=halo)
@@ -118,8 +118,8 @@ def test_sub_domain_with_nonzero_origin_noshift(domain, subdomain, origin):
 ])
 def test_sub_domain_with_nonzero_origin_shift(domain, subdomain, origin_in, origin_out):
     f_in = create_numbered(domain, np.double, inversed=False)
-    bwd = create_numbered(domain, np.double, inversed=True)
-    f_out = create_numbered(domain, np.double, inversed=True)
+    bwd = create_numbered(domain, np.float32, inversed=True)
+    f_out = create_numbered(domain, np.float32, inversed=True)
     halo = 1
 
     comp = gtcomp_ijk.GTComputation(shape=subdomain, halo=halo)
@@ -259,3 +259,5 @@ def test_computation_struct(domain):
     assert np.all(f_out[:, :halo, :] == f_ref[:, :halo, :])
     assert np.all(f_out[-halo:, :, :] == f_ref[-halo:, :, :])
     assert np.all(f_out[:, -halo:, :] == f_ref[:, -halo:, :])
+
+test_copy_simple()

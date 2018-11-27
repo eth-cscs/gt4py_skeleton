@@ -17,19 +17,9 @@ namespace {{ module_name }} {
 
 namespace {
 
-struct {{ stencil_name }}_1_functor {
-    using out = gt::accessor<0, gt::enumtype::inout>;
-    using in = gt::accessor<1, gt::enumtype::in, gt::extent<-1, 0, -1, 0>>;
-    using arg_list = boost::mpl::vector<out, in>;
-
-    template <typename Evaluation>
-    GT_FUNCTION static void Do(Evaluation &eval) {
-        eval(out()) = eval(in(-1, -1, 0));
-    }
-};
+{{- stencil_definitions|indent(4) -}}
 
 static constexpr gt::uint_t halo_size = {{ halo_size }};
-using float_t = {{ float_t }};
 
 using backend_t = gt::backend<gt::target::x86, gt::grid_type::structured,
                               gt::strategy::block>;
@@ -40,9 +30,7 @@ gt::halo_descriptor make_halo_descriptor(gt::uint_t outer_size,
             outer_size};
 }
 
-// TODO: We need to find a way how to define the vertical, which intervals
-// we want, who defines the sizes of them, and whether we want to have
-// additional layers on top / bottom (LevelOffsetLimit of axis)
+// TODO: Axis
 auto make_grid(const std::array<gt::uint_t, 3>& size)
     GT_AUTO_RETURN(gt::make_grid(make_halo_descriptor(size[0], halo_size),
                                  make_halo_descriptor(size[1], halo_size),
@@ -52,30 +40,30 @@ using storage_info_t =
     gt::storage_traits<backend_t::backend_id_t>::custom_layout_storage_info_t<
         0, typename gt::get_layout<3, true>::type,
         gt::halo<halo_size, halo_size, 0>>;
+template<typename T>
 using data_store_t =
-    gt::storage_traits<backend_t::backend_id_t>::data_store_t<float_t,
+    gt::storage_traits<backend_t::backend_id_t>::data_store_t<T,
                                                               storage_info_t>;
-{% for id, param in input_params -%}
-using p_{{ param}} = gt::arg<{{ id }}, data_store_t>;
+{% for id, param, type in input_params -%}
+using p_{{ param}} = gt::arg<{{ id }}, data_store_t<{{ type }}>>;
 {% endfor %}
 
 template <typename Grid>
 auto make_computation(const Grid& grid)
     GT_AUTO_RETURN(gt::make_computation<backend_t>(
         grid,
-        gt::make_multistage(gt::enumtype::execute<gt::enumtype::forward>(),
-                            gt::make_stage<{{ stencil_name }}_1_functor>(
-                                p_f_out(), p_f_in()))));
+        {{- computation_definition|indent(8) -}}));
 
-data_store_t make_data_store(py::buffer& b,
+template<typename T>
+data_store_t<T> make_data_store(py::buffer& b,
                              const std::array<gt::uint_t, 3>& outer_size,
                              const std::array<gt::uint_t, 3>& origin) {
     auto buffer_info = b.request();
 
-    if (buffer_info.format != py::format_descriptor<float_t>::format()) {
+    if (buffer_info.format != py::format_descriptor<T>::format()) {
         throw std::runtime_error(
             "Wrong real type: " + buffer_info.format +
-            " != " + py::format_descriptor<float_t>::format());
+            " != " + py::format_descriptor<T>::format());
     }
 
     if (buffer_info.ndim != 3) {
@@ -98,26 +86,23 @@ data_store_t make_data_store(py::buffer& b,
     // ptr, dims and strides are "outer domain" (i.e., compute domain + halo
     // region). The halo region is only defined through `make_grid` (and
     // currently, in the storage info)
-    float_t* ptr = static_cast<float_t*>(buffer_info.ptr);
+    T* ptr = static_cast<T*>(buffer_info.ptr);
     gt::array<gt::uint_t, 3> dims{};
     gt::array<gt::uint_t, 3> strides{};
     for (int i = 0; i < 3; ++i) {
-        strides[i] = buffer_info.strides[i] / sizeof(float_t);
+        strides[i] = buffer_info.strides[i] / sizeof(T);
         ptr += strides[i] * origin[i];
         dims[i] = outer_size[i];
     }
-    return data_store_t{storage_info_t{dims, strides}, ptr,
-                        gt::ownership::ExternalCPU};
+    return data_store_t<T>{storage_info_t{dims, strides}, ptr,
+                           gt::ownership::ExternalCPU};
 }
 
 }  // namespace
 
-// Note: The GTComputation object is expensive to be created and should not be
-// recreated over and over again. Usually we will only call a computation with
-// one size. If this is not the case, we should cache the most recent
-// GTComputation objects on python side (@lru_cache probably). I don't see the
-// point in supporting this here, because we impose an additional requirement
-// here which is not needed in general.
+// Note: Creating the GTComputation has some cost (allocating temporaries) and
+// should not be recreated over and over again. We should cache the most recent
+// GTComputation objects on python side.
 class GTComputation {
    public:
     GTComputation(std::array<gt::uint_t, 3> size, gt::uint_t halo)
@@ -139,19 +124,19 @@ class GTComputation {
     }
 
     {% set comma = joiner(",") -%}
-    void run({%- for id, param in input_params -%}
+    void run({%- for id, param, type in input_params -%}
              {{- comma() }}
              py::buffer b_{{ param }}
              {{- comma() }} const std::array<gt::uint_t, 3>& {{ param }}_origin
              {%- endfor -%}) {
         // Initialize data stores from input buffers
-        {% for id, param in input_params -%}
-        auto ds_{{ param }} = make_data_store(b_{{ param }}, size_, {{ param }}_origin);
+        {% for id, param, type in input_params -%}
+        auto ds_{{ param }} = make_data_store<{{ type }}>(b_{{ param }}, size_, {{ param }}_origin);
         {% endfor -%}
 
         // Run computation and wait for the synchronization of the output stores
         {% set comma = joiner(", ") -%}
-        computation_.run({%- for id, param in input_params -%}
+        computation_.run({%- for id, param, type in input_params -%}
                          {{ comma() }}p_{{ param }}() = ds_{{ param }}
                          {%- endfor %});
         computation_.sync_bound_data_stores();
@@ -160,7 +145,7 @@ class GTComputation {
    private:
     gt::computation<void,
         {%- set comma = joiner(", ") -%}
-        {%- for id, param in input_params -%}
+        {%- for id, param, type in input_params -%}
         {{ comma() }} p_{{ param }}
         {%- endfor -%}
         > computation_;
@@ -176,7 +161,7 @@ PYBIND11_MODULE({{ module_name }}, m) {
              py::arg("shape"), py::arg("halo"))
         .def("run", &{{ module_name }}::GTComputation::run,
              {%- set comma = joiner(",") -%}
-             {%- for id, param in input_params -%}
+             {%- for id, param, type in input_params -%}
              {{- comma()}}
              py::arg("{{ param }}") {{- comma() }} py::arg("{{ param }}_origin") = zero_origin
              {%- endfor -%});
