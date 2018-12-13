@@ -141,6 +141,8 @@ class GTComputationStruct {
         backend_t::update_global_parameter(global_parameter_, data_t{x, y});
         // Run computation and wait for the synchronization of the output stores
         computation_.run(p_f_out() = ds_f_out, p_f_in() = ds_f_in);
+        // computation_.run(p_f_out() = ds_f_out, p_f_in() = ds_f_in, p_f_gp() =
+        // global_parameter_);
         computation_.sync_bound_data_stores();
     }
 
