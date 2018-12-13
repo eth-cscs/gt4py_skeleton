@@ -49,7 +49,7 @@ def test_whole_domain(domain):
     f_out = create_numbered(domain, np.float32, inversed=True)
     halo = 1
 
-    comp = gtcomp_ijk.GTComputation(shape=calc_domain, halo=halo)
+    comp = gtcomp_ijk.GTComputation(shape=calc_domain, halo_i=halo, halo_j=halo, halo_k=halo)
     comp.run(f_out=f_out, f_in=f_in)
 
     assert np.all(f_out[halo:-halo, halo:-halo, :] == f_in[halo-1:-halo-1, halo-1:-halo-1, :])
@@ -71,7 +71,7 @@ def test_sub_domain_with_zero_origin(domain, subdomain):
     f_out = create_numbered(domain, np.float32, inversed=True)
     halo = 1
 
-    comp = gtcomp_ijk.GTComputation(shape=subdomain, halo=halo)
+    comp = gtcomp_ijk.GTComputation(shape=subdomain, halo_i=halo, halo_j=halo, halo_k=halo)
     comp.run(f_out=f_out, f_in=f_in)
 
     start = [halo, halo, 0]
@@ -98,7 +98,7 @@ def test_sub_domain_with_nonzero_origin_noshift(domain, subdomain, origin):
     f_out = create_numbered(domain, np.float32, inversed=True)
     halo = 1
 
-    comp = gtcomp_ijk.GTComputation(shape=subdomain, halo=halo)
+    comp = gtcomp_ijk.GTComputation(shape=subdomain, halo_i=halo, halo_j=halo, halo_k=halo)
     comp.run(f_out=f_out, f_in=f_in, f_out_origin=origin, f_in_origin=origin)
 
     start = [origin[0] + halo, origin[1] + halo, origin[2]]
@@ -122,7 +122,7 @@ def test_sub_domain_with_nonzero_origin_shift(domain, subdomain, origin_in, orig
     f_out = create_numbered(domain, np.float32, inversed=True)
     halo = 1
 
-    comp = gtcomp_ijk.GTComputation(shape=subdomain, halo=halo)
+    comp = gtcomp_ijk.GTComputation(shape=subdomain, halo_i=halo, halo_j=halo, halo_k=halo)
     comp.run(f_out=f_out, f_in=f_in, f_out_origin=origin_out, f_in_origin=origin_in)
 
     start_in = [origin_in[0] + halo, origin_in[1] + halo, origin_in[2]]

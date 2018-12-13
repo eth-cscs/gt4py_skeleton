@@ -29,7 +29,10 @@ params = dict(module_name='gtcomputation',
               stencil_definitions=stencil_definitions,
               computation_definition=computation_definition,
               ndims=3,
-              halo_size=1,
+              halo_size_i=1,
+              halo_size_j=1,
+              halo_size_k=0,
+              level_offset_limit=1,
               input_params=[
                   (0, 'f_out', 'float'),
                   (1, 'f_in', 'double')])

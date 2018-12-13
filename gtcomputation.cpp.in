@@ -19,7 +19,13 @@ namespace {
 
 {{- stencil_definitions|indent(4) -}}
 
-static constexpr gt::uint_t halo_size = {{ halo_size }};
+// this halo sizes are used to determine the sizes of the temporaries
+static constexpr gt::uint_t halo_size_i = {{ halo_size_i }};
+static constexpr gt::uint_t halo_size_j = {{ halo_size_j }};
+static constexpr gt::uint_t halo_size_k = {{ halo_size_k }};
+
+// Currently 1, with vertical regions it may be different
+static constexpr gt::uint_t level_offset_limit = {{ level_offset_limit }};
 
 using backend_t = gt::backend<gt::target::x86, gt::grid_type::structured,
                               gt::strategy::block>;
@@ -30,16 +36,20 @@ gt::halo_descriptor make_halo_descriptor(gt::uint_t outer_size,
             outer_size};
 }
 
-// TODO: Axis
+using axis =
+    gridtools::axis<1 /* NIntervals */, halo_size_k, level_offset_limit>;
+//
 auto make_grid(const std::array<gt::uint_t, 3>& size)
-    GT_AUTO_RETURN(gt::make_grid(make_halo_descriptor(size[0], halo_size),
-                                 make_halo_descriptor(size[1], halo_size),
-                                 size[2]));
+    GT_AUTO_RETURN(gt::make_grid(make_halo_descriptor(size[0], halo_size_i),
+                                 make_halo_descriptor(size[1], halo_size_j),
+                                 axis(size[2])));
 
+// Note: If we have different halo sizes, this requires different storage infos
+// with different ids. Not sure if we already need that.
 using storage_info_t =
     gt::storage_traits<backend_t::backend_id_t>::custom_layout_storage_info_t<
-        0, typename gt::get_layout<3, true>::type,
-        gt::halo<halo_size, halo_size, 0>>;
+        0 /* id */, typename gt::get_layout<3, true>::type,
+        gt::halo<halo_size_i, halo_size_j, 0 /* not used */>>;
 template<typename T>
 using data_store_t =
     gt::storage_traits<backend_t::backend_id_t>::data_store_t<T,
@@ -72,12 +82,17 @@ data_store_t<T> make_data_store(py::buffer& b,
                                  " != " + std::to_string(3) + "]");
     }
 
-    for (int i = 0; i < 3; ++i) {
-        if (i < 2 && outer_size[i] <= 2 * halo_size)
-            throw std::runtime_error(
-                "Invalid domain size. Compute domain must be non-empty "
-                "(domain size > 2 * halo-size)");
+    if (outer_size[0] <= 2 * halo_size_i)
+        throw std::runtime_error(
+            "Invalid domain size. Compute domain must be non-empty "
+            "(domain size > 2 * halo-size)");
 
+    if (outer_size[1] <= 2 * halo_size_j)
+        throw std::runtime_error(
+            "Invalid domain size. Compute domain must be non-empty "
+            "(domain size > 2 * halo-size)");
+
+    for (int i = 0; i < 3; ++i) {
         if (origin[i] + outer_size[i] > buffer_info.shape[i])
             throw std::runtime_error(
                 "Given shape and origin exceed buffer dimension");
@@ -105,7 +120,7 @@ data_store_t<T> make_data_store(py::buffer& b,
 // GTComputation objects on python side.
 class GTComputation {
    public:
-    GTComputation(std::array<gt::uint_t, 3> size, gt::uint_t halo)
+    GTComputation(std::array<gt::uint_t, 3> size, gt::uint_t halo_i, gt::uint_t halo_j, gt::uint_t halo_k)
         : size_(size),
           computation_(make_computation(make_grid(size))) {
         // TODO the halo_size will not be compile-time anymore at a certain
@@ -120,7 +135,8 @@ class GTComputation {
         // will disappear when the halo region is only controlled by the halo
         // descriptors. But again, this is only an internal requirement (with
         // very small limitations from user perspective).
-        assert(halo == halo_size);
+        assert(halo_i == halo_size_i);
+        assert(halo_j == halo_size_j);
     }
 
     {% set comma = joiner(",") -%}
@@ -157,8 +173,8 @@ class GTComputation {
 static constexpr std::array<gt::uint_t, 3> zero_origin{0, 0, 0};
 PYBIND11_MODULE({{ module_name }}, m) {
     py::class_<{{ module_name }}::GTComputation>(m, "GTComputation")
-        .def(py::init<std::array<gt::uint_t, 3>, gt::uint_t>(),
-             py::arg("shape"), py::arg("halo"))
+        .def(py::init<std::array<gt::uint_t, 3>, gt::uint_t, gt::uint_t, gt::uint_t>(),
+             py::arg("shape"), py::arg("halo_i"), py::arg("halo_j"), py::arg("halo_k"))
         .def("run", &{{ module_name }}::GTComputation::run,
              {%- set comma = joiner(",") -%}
              {%- for id, param, type in input_params -%}
