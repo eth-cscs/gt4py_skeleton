@@ -1,4 +1,4 @@
-#define STRUCTURED_GRIDS
+#define GT_STRUCTURED_GRIDS
 #include <pybind11/pybind11.h>
 #include <gridtools/stencil-composition/stencil-composition.hpp>
 
@@ -18,11 +18,12 @@ using data_store_t = gridtools::storage_traits<
 namespace copy_stencil {
 
 struct copy_functor {
-    typedef gridtools::accessor<0, gridtools::enumtype::in> in;
-    typedef gridtools::accessor<1, gridtools::enumtype::inout> out;
-    typedef boost::mpl::vector<in, out> arg_list;
+    using in = gridtools::in_accessor<0>;
+    using out = gridtools::inout_accessor<1>;
+    using param_list = gridtools::make_param_list<in, out>;
+
     template <typename Evaluation>
-    GT_FUNCTION static void Do(Evaluation &eval) {
+    GT_FUNCTION static void apply(Evaluation &eval) {
         eval(out()) = eval(in());
     }
 };
@@ -42,7 +43,7 @@ data_store_t make_data_store(py::buffer b) {
     storage_info_t storage_info{dims, strides};
     return data_store_t{storage_info,
                         static_cast<float_type *>(buffer_info.ptr),
-                        gridtools::ownership::ExternalCPU};
+                        gridtools::ownership::external_cpu};
 }
 void do_copy(py::buffer b_in, py::buffer b_out) {
     auto in = make_data_store(b_in);

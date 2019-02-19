@@ -1,4 +1,4 @@
-#define STRUCTURED_GRIDS
+#define GT_STRUCTURED_GRIDS
 
 #include <gridtools/common/defs.hpp>
 #include <gridtools/stencil-composition/stencil-composition.hpp>
@@ -24,13 +24,13 @@ struct data_t {
 };
 
 struct revert {
-    using out = gt::accessor<0, gt::enumtype::inout>;
-    using in = gt::accessor<1, gt::enumtype::in, gt::extent<-1, 0, -1, 0>>;
+    using out = gt::inout_accessor<0>;
+    using in = gt::in_accessor<1, gt::extent<-1, 0, -1, 0>>;
     using gp = gt::global_accessor<2>;
-    using arg_list = boost::mpl::vector<out, in, gp>;
+    using param_list = gt::make_param_list<out, in, gp>;
 
     template <typename Evaluation>
-    GT_FUNCTION static void Do(Evaluation& eval) {
+    GT_FUNCTION static void apply(Evaluation& eval) {
         eval(out()).y = eval(in()).x + eval(gp()).y;
         eval(out()).x = eval(in()).y + eval(gp()).x;
     }
@@ -112,8 +112,8 @@ data_store_t make_data_store(py::buffer& b,
         dims[i] = outer_size[i];
     }
     return data_store_t{storage_info_t{dims, strides}, ptr,
-                        gt::ownership::ExternalCPU};
-}  // namespace
+                        gt::ownership::external_cpu};
+}
 
 }  // namespace
 
@@ -149,7 +149,7 @@ class GTComputationStruct {
    private:
     const std::array<gt::uint_t, 3> size_;
     const global_parameter_t<data_t> global_parameter_;
-    gt::computation<void, p_f_out, p_f_in> computation_;
+    gt::computation<p_f_out, p_f_in> computation_;
 };
 
 }  // namespace gtcomputation

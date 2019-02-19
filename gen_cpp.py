@@ -9,12 +9,12 @@ template = env.get_template(template_name)
 
 stencil_definitions="""
 struct diag_diff_1_functor {
-    using out = gt::accessor<0, gt::enumtype::inout>;
-    using in = gt::accessor<1, gt::enumtype::in, gt::extent<-1, 0, -1, 0>>;
-    using arg_list = boost::mpl::vector<out, in>;
+    using out = gt::inout_accessor<0>;
+    using in = gt::in_accessor<1, gt::extent<-1, 0, -1, 0>>;
+    using param_list = gt::make_param_list<out, in>;
 
     template <typename Evaluation>
-    GT_FUNCTION static void Do(Evaluation &eval) {
+    GT_FUNCTION static void apply(Evaluation &eval) {
         eval(out()) = eval(in(-1, -1, 0));
     }
 };

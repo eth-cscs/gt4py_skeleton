@@ -1,4 +1,4 @@
-#define STRUCTURED_GRIDS
+#define GT_STRUCTURED_GRIDS
 
 #include <gridtools/common/defs.hpp>
 #include <gridtools/stencil-composition/stencil-composition.hpp>
@@ -110,7 +110,7 @@ data_store_t<T> make_data_store(py::buffer& b,
         dims[i] = outer_size[i];
     }
     return data_store_t<T>{storage_info_t{dims, strides}, ptr,
-                           gt::ownership::ExternalCPU};
+                           gt::ownership::external_cpu};
 }
 
 }  // namespace
@@ -159,7 +159,7 @@ class GTComputation {
     }
 
    private:
-    gt::computation<void,
+    gt::computation<
         {%- set comma = joiner(", ") -%}
         {%- for id, param, type in input_params -%}
         {{ comma() }} p_{{ param }}

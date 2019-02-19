@@ -1,4 +1,4 @@
-#define STRUCTURED_GRIDS
+#define GT_STRUCTURED_GRIDS
 
 #include <gridtools/boundary-conditions/boundary.hpp>
 #include <gridtools/boundary-conditions/copy.hpp>
@@ -81,7 +81,7 @@ data_store_t make_data_store(py::buffer& b,
         dims[i] = outer_size[i];
     }
     return data_store_t{storage_info_t{dims, strides}, ptr,
-                        gt::ownership::ExternalCPU};
+                        gt::ownership::external_cpu};
 }
 
 }  // namespace

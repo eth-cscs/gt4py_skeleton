@@ -1,4 +1,4 @@
-#define STRUCTURED_GRIDS
+#define GT_STRUCTURED_GRIDS
 
 #include <gridtools/common/defs.hpp>
 #include <gridtools/stencil-composition/stencil-composition.hpp>
@@ -18,12 +18,12 @@ namespace gtcomputation_kji {
 namespace {
 
 struct diag_diff_1_functor {
-    using out = gt::accessor<0, gt::enumtype::inout>;
-    using in = gt::accessor<1, gt::enumtype::in>;
-    using arg_list = boost::mpl::vector<out, in>;
+    using out = gt::inout_accessor<0>;
+    using in = gt::in_accessor<1>;
+    using param_list = gt::make_param_list<out, in>;
 
     template <typename Evaluation>
-    GT_FUNCTION static void Do(Evaluation& eval) {
+    GT_FUNCTION static void apply(Evaluation& eval) {
         eval(out()) = eval(in(-1, -1, 0));
     }
 };
@@ -106,7 +106,7 @@ data_store_t make_data_store(py::buffer& b,
         dims[i] = outer_size[i];
     }
     return data_store_t{storage_info_t{dims, strides}, ptr,
-                        gt::ownership::ExternalCPU};
+                        gt::ownership::external_cpu};
 }
 
 }  // namespace
@@ -147,7 +147,7 @@ class GTComputation {
     }
 
    private:
-    gt::computation<void, p_f_out, p_f_in> computation_;
+    gt::computation<p_f_out, p_f_in> computation_;
     const std::array<gt::uint_t, 3> size_;
 };
 
