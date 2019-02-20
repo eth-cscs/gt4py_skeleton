@@ -67,7 +67,7 @@ void do_copy(py::buffer b_in, py::buffer b_out) {
     // make_computation will have different size
     auto copy = gridtools::make_computation<backend_t>(
         grid, gridtools::make_multistage(
-                  gridtools::enumtype::execute<gridtools::enumtype::forward>(),
+                  gridtools::execute::forward(),
                   gridtools::make_stage<copy_functor>(p_in(), p_out())));
     copy.run(p_in() = in, p_out() = out);
     copy.sync_bound_data_stores();

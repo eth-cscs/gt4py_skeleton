@@ -70,7 +70,7 @@ auto make_computation(const Grid& grid,
                       global_parameter_t<data_t> global_parameter)
     GT_AUTO_RETURN(gt::make_computation<backend_t>(
         grid, p_f_gp() = global_parameter,
-        gt::make_multistage(gt::enumtype::execute<gt::enumtype::forward>(),
+        gt::make_multistage(gt::execute::forward(),
                             gt::make_stage<revert>(p_f_out(), p_f_in(),
                                                    p_f_gp()))));
 

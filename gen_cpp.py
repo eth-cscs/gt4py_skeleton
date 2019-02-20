@@ -20,7 +20,7 @@ struct diag_diff_1_functor {
 };
 """
 computation_definition = """
-gt::make_multistage(gt::enumtype::execute<gt::enumtype::forward>(),
+gt::make_multistage(gt::execute::forward(),
                     gt::make_stage<diag_diff_1_functor>(
                         p_f_out(), p_f_in()))
 """

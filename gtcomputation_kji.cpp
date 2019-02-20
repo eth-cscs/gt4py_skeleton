@@ -62,7 +62,7 @@ template <typename Grid>
 auto make_computation(const Grid& grid)
     GT_AUTO_RETURN(gt::make_computation<backend_t>(
         grid,
-        gt::make_multistage(gt::enumtype::execute<gt::enumtype::forward>(),
+        gt::make_multistage(gt::execute::forward(),
                             gt::make_stage<diag_diff_1_functor>(p_f_out(),
                                                                 p_f_in()))));
 
