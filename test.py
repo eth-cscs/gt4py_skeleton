@@ -260,4 +260,4 @@ def test_computation_struct(domain):
     assert np.all(f_out[-halo:, :, :] == f_ref[-halo:, :, :])
     assert np.all(f_out[:, -halo:, :] == f_ref[:, -halo:, :])
 
-test_copy_simple()
+test_whole_domain(domain = [3, 5, 1])

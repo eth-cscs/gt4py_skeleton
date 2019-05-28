@@ -1,9 +1,7 @@
-#define GT_STRUCTURED_GRIDS
-
-#include <gridtools/boundary-conditions/boundary.hpp>
-#include <gridtools/boundary-conditions/copy.hpp>
+#include <gridtools/boundary_conditions/boundary.hpp>
+#include <gridtools/boundary_conditions/copy.hpp>
 #include <gridtools/common/defs.hpp>
-#include <gridtools/stencil-composition/stencil-composition.hpp>
+#include <gridtools/stencil_composition/stencil_composition.hpp>
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -22,8 +20,7 @@ namespace {
 static constexpr gt::uint_t halo_size = 1;
 using float_t = double;
 
-using backend_t = gt::backend<gt::target::x86, gt::grid_type::structured,
-                              gt::strategy::block>;
+using backend_t = gt::backend::x86;
 
 gt::halo_descriptor make_halo_descriptor(gt::uint_t outer_size,
                                          gt::uint_t halo_size) {
@@ -32,12 +29,11 @@ gt::halo_descriptor make_halo_descriptor(gt::uint_t outer_size,
 }
 
 using storage_info_t =
-    gt::storage_traits<backend_t::backend_id_t>::custom_layout_storage_info_t<
+    gt::storage_traits<backend_t>::custom_layout_storage_info_t<
         0, typename gt::get_layout<3, true>::type,
         gt::halo<halo_size, halo_size, 0>>;
 using data_store_t =
-    gt::storage_traits<backend_t::backend_id_t>::data_store_t<float_t,
-                                                              storage_info_t>;
+    gt::storage_traits<backend_t>::data_store_t<float_t, storage_info_t>;
 using p_f_out = gt::arg<0, data_store_t>;
 using p_f_in = gt::arg<1, data_store_t>;
 
@@ -107,7 +103,7 @@ class GTCopyBoundary {
 
    private:
     const std::array<gt::uint_t, 3> size_;
-    gt::boundary<gt::copy_boundary, gt::target::x86> boundary_;
+    gt::boundary<gt::copy_boundary, backend_t> boundary_;
 };
 
 }  // namespace gtcomputation

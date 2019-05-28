@@ -1,7 +1,5 @@
-#define GT_STRUCTURED_GRIDS
-
 #include <gridtools/common/defs.hpp>
-#include <gridtools/stencil-composition/stencil-composition.hpp>
+#include <gridtools/stencil_composition/stencil_composition.hpp>
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -27,8 +25,7 @@ static constexpr gt::uint_t halo_size_k = {{ halo_size_k }};
 // Currently 1, with vertical regions it may be different
 static constexpr gt::uint_t level_offset_limit = {{ level_offset_limit }};
 
-using backend_t = gt::backend<gt::target::x86, gt::grid_type::structured,
-                              gt::strategy::block>;
+using backend_t = gt::backend::x86;
 
 gt::halo_descriptor make_halo_descriptor(gt::uint_t outer_size,
                                          gt::uint_t halo_size) {
@@ -36,33 +33,35 @@ gt::halo_descriptor make_halo_descriptor(gt::uint_t outer_size,
             outer_size};
 }
 
-using axis =
-    gridtools::axis<1 /* NIntervals */, halo_size_k, level_offset_limit>;
+using axis = gridtools::axis<1 /* NIntervals */,
+                             gt::axis_config::offset_limit<level_offset_limit>,
+                             gt::axis_config::extra_offsets<halo_size_k>>;
 //
-auto make_grid(const std::array<gt::uint_t, 3>& size)
-    GT_AUTO_RETURN(gt::make_grid(make_halo_descriptor(size[0], halo_size_i),
-                                 make_halo_descriptor(size[1], halo_size_j),
-                                 axis(size[2])));
+auto make_grid(const std::array<gt::uint_t, 3>& size) {
+    return gt::make_grid(make_halo_descriptor(size[0], halo_size_i),
+                         make_halo_descriptor(size[1], halo_size_j),
+                         axis(size[2]));
+}
 
 // Note: If we have different halo sizes, this requires different storage infos
 // with different ids. Not sure if we already need that.
 using storage_info_t =
-    gt::storage_traits<backend_t::backend_id_t>::custom_layout_storage_info_t<
+    gt::storage_traits<backend_t>::custom_layout_storage_info_t<
         0 /* id */, typename gt::get_layout<3, true>::type,
         gt::halo<halo_size_i, halo_size_j, 0 /* not used */>>;
 template<typename T>
 using data_store_t =
-    gt::storage_traits<backend_t::backend_id_t>::data_store_t<T,
-                                                              storage_info_t>;
+    gt::storage_traits<backend_t>::data_store_t<T,storage_info_t>;
 {% for id, param, type in input_params -%}
 using p_{{ param}} = gt::arg<{{ id }}, data_store_t<{{ type }}>>;
 {% endfor %}
 
 template <typename Grid>
-auto make_computation(const Grid& grid)
-    GT_AUTO_RETURN(gt::make_computation<backend_t>(
+auto make_computation_helper(const Grid& grid) {
+    return gt::make_computation<backend_t>(
         grid,
-        {{- computation_definition|indent(8) -}}));
+        {{- computation_definition|indent(8) -}});
+}
 
 template<typename T>
 data_store_t<T> make_data_store(py::buffer& b,
@@ -122,7 +121,7 @@ class GTComputation {
    public:
     GTComputation(std::array<gt::uint_t, 3> size, gt::uint_t halo_i, gt::uint_t halo_j, gt::uint_t halo_k)
         : size_(size),
-          computation_(make_computation(make_grid(size))) {
+          computation_(make_computation_helper(make_grid(size))) {
         // TODO the halo_size will not be compile-time anymore at a certain
         // point. Currently we just want the user to pass it to verify if he is
         // really doing what he intends to do. In fact, I think we don't care
@@ -155,7 +154,6 @@ class GTComputation {
         computation_.run({%- for id, param, type in input_params -%}
                          {{ comma() }}p_{{ param }}() = ds_{{ param }}
                          {%- endfor %});
-        computation_.sync_bound_data_stores();
     }
 
    private:

@@ -1,7 +1,5 @@
-#define GT_STRUCTURED_GRIDS
-
 #include <gridtools/common/defs.hpp>
-#include <gridtools/stencil-composition/stencil-composition.hpp>
+#include <gridtools/stencil_composition/stencil_composition.hpp>
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -36,12 +34,7 @@ struct revert {
     }
 };
 
-using backend_t = gt::backend<gt::target::x86, gt::grid_type::structured,
-                              gt::strategy::block>;
-
-template <typename T>
-using global_parameter_t =
-    decltype(backend_t::make_global_parameter(std::declval<T>()));
+using backend_t = gt::backend::x86;
 
 gt::halo_descriptor make_halo_descriptor(gt::uint_t outer_size,
                                          gt::uint_t halo_size) {
@@ -49,30 +42,31 @@ gt::halo_descriptor make_halo_descriptor(gt::uint_t outer_size,
             outer_size};
 }
 
-auto make_grid(const std::array<gt::uint_t, 3>& size)
-    GT_AUTO_RETURN(gt::make_grid(make_halo_descriptor(size[0], halo_size),
-                                 make_halo_descriptor(size[1], halo_size),
-                                 size[2]));
+auto make_grid(const std::array<gt::uint_t, 3>& size) {
+    return gt::make_grid(make_halo_descriptor(size[0], halo_size),
+                         make_halo_descriptor(size[1], halo_size), size[2]);
+}
 
 using storage_info_t =
-    gt::storage_traits<backend_t::backend_id_t>::custom_layout_storage_info_t<
+    gt::storage_traits<backend_t>::custom_layout_storage_info_t<
         0, typename gt::get_layout<3, true>::type,
         gt::halo<halo_size, halo_size, halo_size>>;
 using data_store_t =
-    gt::storage_traits<backend_t::backend_id_t>::data_store_t<data_t,
-                                                              storage_info_t>;
+    gt::storage_traits<backend_t>::data_store_t<data_t, storage_info_t>;
 using p_f_out = gt::arg<0, data_store_t>;
 using p_f_in = gt::arg<1, data_store_t>;
-using p_f_gp = gt::arg<2, global_parameter_t<data_t>>;
+using p_f_gp = gt::arg<2, gt::global_parameter<backend_t, data_t>>;
 
 template <typename Grid>
-auto make_computation(const Grid& grid,
-                      global_parameter_t<data_t> global_parameter)
-    GT_AUTO_RETURN(gt::make_computation<backend_t>(
+auto make_computation_helper(
+    const Grid& grid,
+    gt::global_parameter<backend_t, data_t> global_parameter) {
+    return gt::make_computation<backend_t>(
         grid, p_f_gp() = global_parameter,
-        gt::make_multistage(gt::execute::forward(),
-                            gt::make_stage<revert>(p_f_out(), p_f_in(),
-                                                   p_f_gp()))));
+        gt::make_multistage(
+            gt::execute::forward(),
+            gt::make_stage<revert>(p_f_out(), p_f_in(), p_f_gp())));
+}
 
 data_store_t make_data_store(py::buffer& b,
                              const std::array<gt::uint_t, 3>& outer_size,
@@ -127,8 +121,9 @@ class GTComputationStruct {
    public:
     GTComputationStruct(std::array<gt::uint_t, 3> size, gt::uint_t halo)
         : size_(size),
-          global_parameter_(backend_t::make_global_parameter(data_t{})),
-          computation_(make_computation(make_grid(size), global_parameter_)) {
+          global_parameter_(gt::make_global_parameter<backend_t>(data_t{})),
+          computation_(
+              make_computation_helper(make_grid(size), global_parameter_)) {
         assert(halo == halo_size);
     }
 
@@ -138,17 +133,14 @@ class GTComputationStruct {
         // Initialize data stores from input buffers
         auto ds_f_out = make_data_store(b_f_out, size_, f_out_origin);
         auto ds_f_in = make_data_store(b_f_in, size_, f_in_origin);
-        backend_t::update_global_parameter(global_parameter_, data_t{x, y});
+        gt::update_global_parameter(global_parameter_, data_t{x, y});
         // Run computation and wait for the synchronization of the output stores
         computation_.run(p_f_out() = ds_f_out, p_f_in() = ds_f_in);
-        // computation_.run(p_f_out() = ds_f_out, p_f_in() = ds_f_in, p_f_gp() =
-        // global_parameter_);
-        computation_.sync_bound_data_stores();
     }
 
    private:
     const std::array<gt::uint_t, 3> size_;
-    const global_parameter_t<data_t> global_parameter_;
+    const gt::global_parameter<backend_t, data_t> global_parameter_;
     gt::computation<p_f_out, p_f_in> computation_;
 };
 

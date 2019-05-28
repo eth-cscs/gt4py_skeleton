@@ -1,20 +1,17 @@
-#define GT_STRUCTURED_GRIDS
 #include <pybind11/pybind11.h>
-#include <gridtools/stencil-composition/stencil-composition.hpp>
+#include <gridtools/stencil_composition/stencil_composition.hpp>
 
 namespace py = pybind11;
-using backend_t =
-    gridtools::backend<gridtools::target::x86, gridtools::grid_type::structured,
-                       gridtools::strategy::block>;
+using backend_t = gridtools::backend::x86;
 constexpr int ndims = 3;
 using float_type = double;
 // we can use halo = 0. This is redundant here because we use an external
 // storage.
-using storage_info_t =
-    gridtools::storage_traits<backend_t::backend_id_t>::storage_info_t<
-        0, ndims, gridtools::halo<0, 0, 0>>;
-using data_store_t = gridtools::storage_traits<
-    backend_t::backend_id_t>::data_store_t<float_type, storage_info_t>;
+using storage_info_t = gridtools::storage_traits<backend_t>::storage_info_t<
+    0, ndims, gridtools::halo<0, 0, 0>>;
+using data_store_t =
+    gridtools::storage_traits<backend_t>::data_store_t<float_type,
+                                                       storage_info_t>;
 namespace copy_stencil {
 
 struct copy_functor {
@@ -70,7 +67,6 @@ void do_copy(py::buffer b_in, py::buffer b_out) {
                   gridtools::execute::forward(),
                   gridtools::make_stage<copy_functor>(p_in(), p_out())));
     copy.run(p_in() = in, p_out() = out);
-    copy.sync_bound_data_stores();
 }
 }  // namespace copy_stencil
 PYBIND11_MODULE(copy_simple, m) { m.def("copy", &copy_stencil::do_copy); }

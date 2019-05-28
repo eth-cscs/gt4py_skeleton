@@ -1,7 +1,5 @@
-#define GT_STRUCTURED_GRIDS
-
 #include <gridtools/common/defs.hpp>
-#include <gridtools/stencil-composition/stencil-composition.hpp>
+#include <gridtools/stencil_composition/stencil_composition.hpp>
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -31,8 +29,7 @@ struct diag_diff_1_functor {
 static constexpr gt::uint_t halo_size = 1;
 using float_t = double;
 
-using backend_t = gt::backend<gt::target::x86, gt::grid_type::structured,
-                              gt::strategy::block>;
+using backend_t = gt::backend::x86;
 
 gt::halo_descriptor make_halo_descriptor(gt::uint_t outer_size,
                                          gt::uint_t halo_size) {
@@ -43,28 +40,27 @@ gt::halo_descriptor make_halo_descriptor(gt::uint_t outer_size,
 // TODO: We need to find a way how to define the vertical, which intervals
 // we want, who defines the sizes of them, and whether we want to have
 // additional layers on top / bottom (LevelOffsetLimit of axis)
-auto make_grid(const std::array<gt::uint_t, 3>& size)
-    GT_AUTO_RETURN(gt::make_grid(make_halo_descriptor(size[0], halo_size),
-                                 make_halo_descriptor(size[1], halo_size),
-                                 size[2]));
+auto make_grid(const std::array<gt::uint_t, 3>& size) {
+    return gt::make_grid(make_halo_descriptor(size[0], halo_size),
+                         make_halo_descriptor(size[1], halo_size), size[2]);
+}
 
 using storage_info_t =
-    gt::storage_traits<backend_t::backend_id_t>::custom_layout_storage_info_t<
+    gt::storage_traits<backend_t>::custom_layout_storage_info_t<
         0, typename gt::get_layout<3, false>::type,
         gt::halo<halo_size, halo_size, 0>>;
 using data_store_t =
-    gt::storage_traits<backend_t::backend_id_t>::data_store_t<float_t,
-                                                              storage_info_t>;
+    gt::storage_traits<backend_t>::data_store_t<float_t, storage_info_t>;
 using p_f_out = gt::arg<0, data_store_t>;
 using p_f_in = gt::arg<1, data_store_t>;
 
 template <typename Grid>
-auto make_computation(const Grid& grid)
-    GT_AUTO_RETURN(gt::make_computation<backend_t>(
-        grid,
-        gt::make_multistage(gt::execute::forward(),
-                            gt::make_stage<diag_diff_1_functor>(p_f_out(),
-                                                                p_f_in()))));
+auto make_computation_helper(const Grid& grid) {
+    return gt::make_computation<backend_t>(
+        grid, gt::make_multistage(
+                  gt::execute::forward(),
+                  gt::make_stage<diag_diff_1_functor>(p_f_out(), p_f_in())));
+}
 
 data_store_t make_data_store(py::buffer& b,
                              const std::array<gt::uint_t, 3>& outer_size,
@@ -120,7 +116,7 @@ data_store_t make_data_store(py::buffer& b,
 class GTComputation {
    public:
     GTComputation(std::array<gt::uint_t, 3> size, gt::uint_t halo)
-        : size_(size), computation_(make_computation(make_grid(size))) {
+        : size_(size), computation_(make_computation_helper(make_grid(size))) {
         // TODO the halo_size will not be compile-time anymore at a certain
         // point. Currently we just want the user to pass it to verify if he is
         // really doing what he intends to do. In fact, I think we don't care
@@ -143,7 +139,6 @@ class GTComputation {
         auto ds_f_in = make_data_store(b_f_in, size_, f_in_origin);
         // Run computation and wait for the synchronization of the output stores
         computation_.run(p_f_out() = ds_f_out, p_f_in() = ds_f_in);
-        computation_.sync_bound_data_stores();
     }
 
    private:
