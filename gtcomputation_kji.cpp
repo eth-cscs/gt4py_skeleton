@@ -17,7 +17,7 @@ namespace {
 
 struct diag_diff_1_functor {
     using out = gt::inout_accessor<0>;
-    using in = gt::in_accessor<1>;
+    using in = gt::in_accessor<1, gt::extent<-1, 0, -1, 0>>;
     using param_list = gt::make_param_list<out, in>;
 
     template <typename Evaluation>
