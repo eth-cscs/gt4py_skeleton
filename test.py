@@ -3,7 +3,7 @@ import gtcomputation_kji as gtcomp_kji
 import gtcomputation_struct as gtcomp_struct
 import gtboundary
 import copy_simple
-import new_template
+import gt4py_gt_computation as gtcomp_new
 import numpy as np
 import itertools
 
@@ -267,17 +267,17 @@ def test_computation_struct(domain):
     ([3, 5, 8], [2, 4, 8]),
     ([3, 5, 1], [2, 4, 1]),
 ])
-def test_new_template(domain, calc_domain):
+def test_gtcomp_new(domain, calc_domain):
     f_in = create_numbered(domain, np.double, inversed=False)
     bwd = create_numbered(domain, np.float32, inversed=True)
     f_out = create_numbered(domain, np.float32, inversed=True)
     halo = 0
 
-    comp = new_template.run_computation(domain=calc_domain, f_out=f_out, f_in=f_in,
+    comp = gtcomp_new.run_computation(domain=calc_domain, f_out=f_out, f_in=f_in,
         f_out_origin=[1, 1, 0], f_in_origin=[1, 1, 0], exec_info=dict())
 
     assert np.all(f_out[1:,1:,:] == f_in[:-1,:-1,:])
     assert np.all(f_out[0,:,:] == bwd[0,:,:])
 
 
-test_new_template(domain = [3, 5, 1], calc_domain = [2, 4, 1])
+test_gtcomp_new(domain = [3, 5, 1], calc_domain = [2, 4, 1])

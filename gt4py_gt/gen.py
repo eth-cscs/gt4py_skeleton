@@ -9,8 +9,8 @@ env = jinja2.Environment(loader=jinja2.FileSystemLoader("."))
 template = env.get_template(sys.argv[1])
 
 params = dict(
-    stencil_unique_name="new_template",
-    module_name="new_template",
+    stencil_unique_name="new_computation",
+    module_name="gt4py_gt_computation",
     backend="x86",
     k_axis=dict(n_intervals=1, offset_limit=1),
     halo_sizes=[0, 0, 0],
@@ -39,7 +39,7 @@ params = dict(
     multi_stages=[dict(exec="forward", steps=[["diag_diff_1_functor"]])],
     level_offset_limit=1,
     input_params=[(0, "f_out", "float"), (1, "f_in", "double")],
-    headerpath="new_template.hpp",
+    headerpath="computation.hpp",
 )
 
 with open(sys.argv[2], "w") as f:

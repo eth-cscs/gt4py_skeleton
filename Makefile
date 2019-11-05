@@ -42,25 +42,28 @@ gtcomputation_struct.o: gtcomputation_struct.cpp
 gtcomputation_struct.so: gtcomputation_struct.o
 	$(CC) -shared -o gtcomputation_struct.so gtcomputation_struct.o -l${PYTHON_LIB} -fPIC
 
-new_template.cpp: new_template.cpp.in new_gen_cpp.py
-	python new_gen_cpp.py new_template.cpp.in new_template.cpp
-new_template.hpp: new_template.hpp.in new_gen_cpp.py
-	python new_gen_cpp.py new_template.hpp.in new_template.hpp
-new_bindings.cpp: new_bindings.cpp.in new_gen_cpp.py
-	python new_gen_cpp.py new_bindings.cpp.in new_bindings.cpp
-new_bindings.o: new_bindings.cpp new_template.hpp
-	$(CC) -o new_bindings.o new_bindings.cpp -std=c++14 $(INCLUDES) -c -fPIC
-new_template.o: new_template.cpp new_template.hpp
-	$(CC) -o new_template.o new_template.cpp -std=c++14 $(INCLUDES) -c -fPIC
-new_template.so: new_template.o new_bindings.o
-	$(CC) -shared -o new_template.so new_template.o new_bindings.o -l${PYTHON_LIB} -fPIC
+gt4py_gt/computation.cpp: gt4py_gt/computation.cpp.in gt4py_gt/gen.py
+	python gt4py_gt/gen.py gt4py_gt/computation.cpp.in gt4py_gt/computation.cpp
+	clang-format -i gt4py_gt/computation.cpp
+gt4py_gt/computation.hpp: gt4py_gt/computation.hpp.in gt4py_gt/gen.py
+	python gt4py_gt/gen.py gt4py_gt/computation.hpp.in gt4py_gt/computation.hpp
+	clang-format -i gt4py_gt/computation.hpp
+gt4py_gt/bindings.cpp: gt4py_gt/bindings.cpp.in gt4py_gt/gen.py
+	python gt4py_gt/gen.py gt4py_gt/bindings.cpp.in gt4py_gt/bindings.cpp
+	clang-format -i gt4py_gt/bindings.cpp
+gt4py_gt_bindings.o: gt4py_gt/bindings.cpp gt4py_gt/computation.hpp
+	$(CC) -o gt4py_gt_bindings.o gt4py_gt/bindings.cpp -std=c++14 $(INCLUDES) -c -fPIC
+gt4py_gt_computation.o: gt4py_gt/computation.cpp gt4py_gt/computation.hpp
+	$(CC) -o gt4py_gt_computation.o gt4py_gt/computation.cpp -std=c++14 $(INCLUDES) -c -fPIC
+gt4py_gt_computation.so: gt4py_gt_computation.o gt4py_gt_bindings.o
+	$(CC) -shared -o gt4py_gt_computation.so gt4py_gt_computation.o gt4py_gt_bindings.o -l${PYTHON_LIB} -fPIC
 
 .PHONY: test
-test: gtcomputation.so test.py copy_simple.so gtcomputation_kji.so gtboundary.so gtcomputation_struct.so new_template.so
+test: gtcomputation.so test.py copy_simple.so gtcomputation_kji.so gtboundary.so gtcomputation_struct.so gt4py_gt_computation.so
 	pytest -v test.py
 
 .PHONY: clean
 clean:
 	rm -f gtcomputation.so copy_simple.so gtcomputation_kji.so gtboundary.so gtcomputation_struct.so gtcomputation.o copy_simple.o \
 		gtcomputation_kji.o gtcomputation_struct.o gtboundary.o gtcomputation.cpp \
-		new_bindings.o new_template.o new_template.so new_bindings.cpp new_template.hpp new_template.cpp
+		gt4py_gt_bindings.o gt4py_gt_computation.o gt4py_gt_computation.so gt4py_gt/bindings.cpp gt4py_gt/computation.hpp gt4py_gt/computation.cpp
