@@ -4,6 +4,8 @@ import gtcomputation_struct as gtcomp_struct
 import gtboundary
 import copy_simple
 import gt4py_gt_computation as gtcomp_new
+import copy_dawn
+import shift_dawn
 import numpy as np
 import itertools
 
@@ -260,6 +262,48 @@ def test_computation_struct(domain):
     assert np.all(f_out[:, :halo, :] == f_ref[:, :halo, :])
     assert np.all(f_out[-halo:, :, :] == f_ref[-halo:, :, :])
     assert np.all(f_out[:, -halo:, :] == f_ref[:, -halo:, :])
+
+def test_copy_dawn():
+    x = 20
+    y = 30
+    z = 10  
+    fwd = create_numbered([x,y,z], np.double, inversed=False)
+    bwd = create_numbered([x,y,z], np.double, inversed=True)
+
+    f_in = fwd
+    f_out = bwd
+
+
+    stencil = copy_dawn.copy([x,y,z],3)
+    stencil.run(f_out = f_out, f_in = f_in)
+    halo =3
+    assert np.all(f_out[halo:-halo, halo:-halo, :] == fwd[halo:-halo, halo:-halo, :])
+    assert np.all(f_out[:halo, :, :] == bwd[:halo, :, :])
+    assert np.all(f_out[:, :halo, :] == bwd[:, :halo, :])
+    assert np.all(f_out[-halo:, :, :] == bwd[-halo:, :, :])
+    assert np.all(f_out[:, -halo:, :] == bwd[:, -halo:, :])
+
+@pytest.mark.parametrize("domain", [
+    ([16, 26, 30]),
+    ([11, 9, 8]),
+    ([9, 11, 8]),
+    ([9, 11, 1]),
+])
+def test_dawn_shift(domain):
+    calc_domain = domain
+    f_in = create_numbered(domain, np.double, inversed=False)
+    bwd = create_numbered(domain, np.double, inversed=True)
+    f_out = create_numbered(domain, np.double, inversed=True)
+    halo = 3
+
+    comp = shift_dawn.shift(calc_domain, 3)
+    comp.run(f_out=f_out, f_in=f_in)
+
+    assert np.all(f_out[halo:-halo, halo:-halo, :] == f_in[halo-1:-halo-1, halo-1:-halo-1, :])
+    assert np.all(f_out[:halo, :, :] == bwd[:halo, :, :])
+    assert np.all(f_out[:, :halo, :] == bwd[:, :halo, :])
+    assert np.all(f_out[-halo:, :, :] == bwd[-halo:, :, :])
+    assert np.all(f_out[:, -halo:, :] == bwd[:, -halo:, :])
 
 @pytest.mark.parametrize("domain,calc_domain", [
     ([10, 20, 30], [9, 19, 30]),
