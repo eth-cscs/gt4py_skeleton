@@ -24,7 +24,7 @@ gridtools::clang::domain make_domain(const std::array<gt::uint_t, 3> &size) {
 
 using storage_info_t =
     gt::storage_traits<backend_t>::custom_layout_storage_info_t<
-        0, typename gt::get_layout<3, false>::type,
+        0, typename gt::get_layout<3, true>::type,
         gt::halo<halo_size, halo_size, 0>>;
 using data_store_t =
     gt::storage_traits<backend_t>::data_store_t<double, storage_info_t>;
