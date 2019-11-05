@@ -47,22 +47,29 @@ gt4py_gt_computation.o: gt4py_gt/computation.cpp gt4py_gt/computation.hpp
 gt4py_gt_computation.so: gt4py_gt_computation.o gt4py_gt_bindings.o
 	$(CC) -shared -o gt4py_gt_computation.so gt4py_gt_computation.o gt4py_gt_bindings.o -l${PYTHON_LIB} -fPIC
 
+gt4py_dawn_bindings.o: gt4py_dawn/bindings.cpp gt4py_dawn/computation.hpp
+	$(CC) -o gt4py_dawn_bindings.o gt4py_dawn/bindings.cpp -std=c++14 $(INCLUDES) -c -fPIC
+gt4py_dawn_computation.o: gt4py_dawn/computation.cpp gt4py_dawn/computation.hpp
+	$(CC) -o gt4py_dawn_computation.o gt4py_dawn/computation.cpp -std=c++14 $(INCLUDES) -I$(GTCLANG_PATH) -c -fPIC
+gt4py_dawn_computation.so: gt4py_dawn_computation.o gt4py_dawn_bindings.o
+	$(CC) -shared -o gt4py_dawn_computation.so gt4py_dawn_computation.o gt4py_dawn_bindings.o -l${PYTHON_LIB} -fPIC
+
 generated/copy_stencil.hpp: generated/copy_stencil.in.hpp
 	$(GTCLANG) -o generated/copy_stencil.hpp generated/copy_stencil.in.hpp -backend=c++-naive
 dawn_copy.o: dawn_copy.cpp generated/copy_stencil.hpp
-	$(CC) -o dawn_copy.o dawn_copy.cpp -I$(GTCLANG_PATH) $(INCLUDES) -std=c++11 -c -fPIC -O0 -g
+	$(CC) -o dawn_copy.o dawn_copy.cpp -I$(GTCLANG_PATH) $(INCLUDES) -std=c++11 -c -fPIC
 dawn_copy.so: dawn_copy.o
 	$(CC) -shared -o dawn_copy.so dawn_copy.o -l${PYTHON_LIB} -fPIC
 
 generated/shift_stencil.hpp: generated/shift_stencil.in.hpp
 	$(GTCLANG) -o generated/shift_stencil.hpp generated/shift_stencil.in.hpp -backend=c++-naive
 dawn_shift.o: dawn_shift.cpp generated/shift_stencil.hpp
-	$(CC) -o dawn_shift.o dawn_shift.cpp -I$(GTCLANG_PATH) $(INCLUDES) -std=c++11 -c -fPIC -O0 -g
+	$(CC) -o dawn_shift.o dawn_shift.cpp -I$(GTCLANG_PATH) $(INCLUDES) -std=c++11 -c -fPIC
 dawn_shift.so: dawn_shift.o
 	$(CC) -shared -o dawn_shift.so dawn_shift.o -l${PYTHON_LIB} -fPIC
 
 .PHONY: test
-test: gtcomputation.so test.py copy_simple.so gtcomputation_kji.so gtboundary.so gtcomputation_struct.so gt4py_gt_computation.so dawn_copy.so dawn_shift.so
+test: gtcomputation.so test.py copy_simple.so gtcomputation_kji.so gtboundary.so gtcomputation_struct.so gt4py_gt_computation.so gt4py_dawn_computation.so dawn_copy.so dawn_shift.so
 	pytest -v test.py
 
 .PHONY: clean
@@ -70,4 +77,5 @@ clean:
 	rm -f gtcomputation.so copy_simple.so gtcomputation_kji.so gtboundary.so gtcomputation_struct.so gtcomputation.o copy_simple.o \
 		gtcomputation_kji.o gtcomputation_struct.o gtboundary.o gtcomputation.cpp \
 		gt4py_gt_bindings.o gt4py_gt_computation.o gt4py_gt_computation.so gt4py_gt/bindings.cpp gt4py_gt/computation.hpp gt4py_gt/computation.cpp \
+		gt4py_dawn_bindings.o gt4py_dawn_computation.o gt4py_dawn_computation.so gt4py_dawn/bindings.cpp gt4py_dawn/computation.hpp gt4py_dawn/computation.cpp \
 		dawn_copy.o dawn_copy.so dawn_shift.so dawn_shift.o generated/copy_stencil.hpp generated/shift_stencil.hpp

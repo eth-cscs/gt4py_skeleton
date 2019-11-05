@@ -4,6 +4,7 @@ import gtcomputation_struct as gtcomp_struct
 import gtboundary
 import copy_simple
 import gt4py_gt_computation as gtcomp_new
+import gt4py_dawn_computation as gtcomp_new_dawn
 import dawn_copy
 import dawn_shift
 import numpy as np
@@ -322,4 +323,28 @@ def test_gtcomp_new(domain, calc_domain):
     assert np.all(f_out[1:,1:,:] == f_in[:-1,:-1,:])
     assert np.all(f_out[0,:,:] == bwd[0,:,:])
 
+
+@pytest.mark.parametrize("calc_domain", [
+    ([9, 19, 30]),
+    ([4, 2, 8]),
+    ([2, 4, 8]),
+    ([2, 4, 1]),
+])
+def test_gtcomp_new(calc_domain):
+    halo = 3
+    total_domain = [calc_domain[0] + 2 * halo, calc_domain[1] + 2 * halo, calc_domain[2]]
+    f_in = create_numbered(total_domain, np.double, inversed=False)
+    bwd = create_numbered(total_domain, np.double, inversed=True)
+    f_out = create_numbered(total_domain, np.double, inversed=True)
+
+    comp = gtcomp_new_dawn.run_computation(domain=calc_domain, f_out=f_out, f_in=f_in,
+        f_out_origin=[halo, halo, 0], f_in_origin=[halo, halo, 0], exec_info=dict())
+
+    assert np.all(f_out[halo:-halo, halo:-halo, :] == f_in[halo:-halo, halo:-halo, :])
+    assert np.all(f_out[:halo, :, :] == bwd[:halo, :, :])
+    assert np.all(f_out[:, :halo, :] == bwd[:, :halo, :])
+    assert np.all(f_out[-halo:, :, :] == bwd[-halo:, :, :])
+    assert np.all(f_out[:, -halo:, :] == bwd[:, -halo:, :])
+
+test_gtcomp_new([2, 4, 8])
 
