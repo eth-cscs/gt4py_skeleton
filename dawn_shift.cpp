@@ -68,7 +68,6 @@ static data_store_t make_data_store(py::buffer &b,
     gt::array<gt::uint_t, 3> strides{};
     for (int i = 0; i < 3; ++i) {
         strides[i] = buffer_info.strides[i] / sizeof(double);
-        std::cout << "stride " << i << " = " << strides[i] << '\n';
         ptr += strides[i] * origin[i];
         dims[i] = outer_size[i];
     }
