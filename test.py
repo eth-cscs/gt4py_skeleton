@@ -4,8 +4,8 @@ import gtcomputation_struct as gtcomp_struct
 import gtboundary
 import copy_simple
 import gt4py_gt_computation as gtcomp_new
-import copy_dawn
-import shift_dawn
+import dawn_copy
+import dawn_shift
 import numpy as np
 import itertools
 
@@ -274,7 +274,7 @@ def test_copy_dawn():
     f_out = bwd
 
 
-    stencil = copy_dawn.copy([x,y,z],3)
+    stencil = dawn_copy.copy([x,y,z],3)
     stencil.run(f_out = f_out, f_in = f_in)
     halo =3
     assert np.all(f_out[halo:-halo, halo:-halo, :] == fwd[halo:-halo, halo:-halo, :])
@@ -296,7 +296,7 @@ def test_dawn_shift(domain):
     f_out = create_numbered(domain, np.double, inversed=True)
     halo = 3
 
-    comp = shift_dawn.shift(calc_domain, 3)
+    comp = dawn_shift.shift(calc_domain, 3)
     comp.run(f_out=f_out, f_in=f_in)
 
     assert np.all(f_out[halo:-halo, halo:-halo, :] == f_in[halo-1:-halo-1, halo-1:-halo-1, :])
@@ -315,7 +315,6 @@ def test_gtcomp_new(domain, calc_domain):
     f_in = create_numbered(domain, np.double, inversed=False)
     bwd = create_numbered(domain, np.float32, inversed=True)
     f_out = create_numbered(domain, np.float32, inversed=True)
-    halo = 0
 
     comp = gtcomp_new.run_computation(domain=calc_domain, f_out=f_out, f_in=f_in,
         f_out_origin=[1, 1, 0], f_in_origin=[1, 1, 0], exec_info=dict())
@@ -324,4 +323,3 @@ def test_gtcomp_new(domain, calc_domain):
     assert np.all(f_out[0,:,:] == bwd[0,:,:])
 
 
-test_gtcomp_new(domain = [3, 5, 1], calc_domain = [2, 4, 1])

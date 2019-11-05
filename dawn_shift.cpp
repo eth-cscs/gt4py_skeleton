@@ -1,4 +1,4 @@
-#include "generated/shift.hpp"
+#include "generated/shift_stencil.hpp"
 
 // #include <gridtools/common/defs.hpp>
 // #include <gridtools/stencil_composition/stencil_composition.hpp>
@@ -68,6 +68,7 @@ static data_store_t make_data_store(py::buffer &b,
     gt::array<gt::uint_t, 3> strides{};
     for (int i = 0; i < 3; ++i) {
         strides[i] = buffer_info.strides[i] / sizeof(double);
+        std::cout << "stride " << i << " = " << strides[i] << '\n';
         ptr += strides[i] * origin[i];
         dims[i] = outer_size[i];
     }
@@ -106,7 +107,7 @@ class GTComputation {
         auto ds_f_out = make_data_store(b_f_out, size_, f_out_origin);
         auto ds_f_in = make_data_store(b_f_in, size_, f_in_origin);
         // Run computation and wait for the synchronization of the output stores
-        computation_.run(ds_f_in, ds_f_out);
+        computation_.run(ds_f_out, ds_f_in);
     }
 
    private:
@@ -117,7 +118,7 @@ class GTComputation {
 }  // namespace dawn_shift
 
 static constexpr std::array<gt::uint_t, 3> zero_origin{0, 0, 0};
-PYBIND11_MODULE(shift_dawn, m) {
+PYBIND11_MODULE(dawn_shift, m) {
     py::class_<dawn_shift::GTComputation>(m, "shift")
         .def(py::init<std::array<gt::uint_t, 3>, gt::uint_t>(),
              py::arg("shape"), py::arg("halo"))

@@ -1,4 +1,4 @@
-#include "generated/copystencil.hpp"
+#include "generated/copy_stencil.hpp"
 
 // #include <gridtools/common/defs.hpp>
 // #include <gridtools/stencil_composition/stencil_composition.hpp>
@@ -117,7 +117,7 @@ class GTComputation {
 }  // namespace dawn_copy
 
 static constexpr std::array<gt::uint_t, 3> zero_origin{0, 0, 0};
-PYBIND11_MODULE(copy_dawn, m) {
+PYBIND11_MODULE(dawn_copy, m) {
     py::class_<dawn_copy::GTComputation>(m, "copy")
         .def(py::init<std::array<gt::uint_t, 3>, gt::uint_t>(),
              py::arg("shape"), py::arg("halo"))
