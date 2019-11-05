@@ -22,12 +22,8 @@ gridtools::clang::domain make_domain(const std::array<gt::uint_t, 3> &size) {
     return d;
 }
 
-using storage_info_t =
-    gt::storage_traits<backend_t>::custom_layout_storage_info_t<
-        0, typename gt::get_layout<3, true>::type,
-        gt::halo<halo_size, halo_size, 0>>;
-using data_store_t =
-    gt::storage_traits<backend_t>::data_store_t<double, storage_info_t>;
+using storage_info_t = meta_data_ijk_t;
+using data_store_t = storage_ijk_t;
 static_assert(
     std::is_same<data_store_t, gridtools::clang::storage_ijk_t>::value,
     "Storage types do not match");

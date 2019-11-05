@@ -2,7 +2,7 @@
 
 using namespace gridtools::clang;
 
-stencil copystencil {
+stencil shiftstencil {
     storage out;
     storage in;
 
