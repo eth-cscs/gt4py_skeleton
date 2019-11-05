@@ -3,6 +3,7 @@ import gtcomputation_kji as gtcomp_kji
 import gtcomputation_struct as gtcomp_struct
 import gtboundary
 import copy_simple
+import new_template
 import numpy as np
 import itertools
 
@@ -260,4 +261,23 @@ def test_computation_struct(domain):
     assert np.all(f_out[-halo:, :, :] == f_ref[-halo:, :, :])
     assert np.all(f_out[:, -halo:, :] == f_ref[:, -halo:, :])
 
-test_whole_domain(domain = [3, 5, 1])
+@pytest.mark.parametrize("domain,calc_domain", [
+    ([10, 20, 30], [9, 19, 30]),
+    ([5, 3, 8], [4, 2, 8]),
+    ([3, 5, 8], [2, 4, 8]),
+    ([3, 5, 1], [2, 4, 1]),
+])
+def test_new_template(domain, calc_domain):
+    f_in = create_numbered(domain, np.double, inversed=False)
+    bwd = create_numbered(domain, np.float32, inversed=True)
+    f_out = create_numbered(domain, np.float32, inversed=True)
+    halo = 0
+
+    comp = new_template.run_computation(domain=calc_domain, f_out=f_out, f_in=f_in,
+        f_out_origin=[1, 1, 0], f_in_origin=[1, 1, 0], exec_info=dict())
+
+    assert np.all(f_out[1:,1:,:] == f_in[:-1,:-1,:])
+    assert np.all(f_out[0,:,:] == bwd[0,:,:])
+
+
+test_new_template(domain = [3, 5, 1], calc_domain = [2, 4, 1])

@@ -42,10 +42,25 @@ gtcomputation_struct.o: gtcomputation_struct.cpp
 gtcomputation_struct.so: gtcomputation_struct.o
 	$(CC) -shared -o gtcomputation_struct.so gtcomputation_struct.o -l${PYTHON_LIB} -fPIC
 
+new_template.cpp: new_template.cpp.in new_gen_cpp.py
+	python new_gen_cpp.py new_template.cpp.in new_template.cpp
+new_template.hpp: new_template.hpp.in new_gen_cpp.py
+	python new_gen_cpp.py new_template.hpp.in new_template.hpp
+new_bindings.cpp: new_bindings.cpp.in new_gen_cpp.py
+	python new_gen_cpp.py new_bindings.cpp.in new_bindings.cpp
+new_bindings.o: new_bindings.cpp new_template.hpp
+	$(CC) -o new_bindings.o new_bindings.cpp -std=c++14 $(INCLUDES) -c -fPIC
+new_template.o: new_template.cpp new_template.hpp
+	$(CC) -o new_template.o new_template.cpp -std=c++14 $(INCLUDES) -c -fPIC
+new_template.so: new_template.o new_bindings.o
+	$(CC) -shared -o new_template.so new_template.o new_bindings.o -l${PYTHON_LIB} -fPIC
+
 .PHONY: test
-test: gtcomputation.so test.py copy_simple.so gtcomputation_kji.so gtboundary.so gtcomputation_struct.so
+test: gtcomputation.so test.py copy_simple.so gtcomputation_kji.so gtboundary.so gtcomputation_struct.so new_template.so
 	pytest -v test.py
 
 .PHONY: clean
 clean:
-	rm -f gtcomputation.so copy_simple.so gtcomputation_kji.so gtboundary.so gtcomputation_struct.so gtcomputation.o copy_simple.o gtcomputation_kji.o gtcomputation_struct.o gtboundary.o gtcomputation.cpp
+	rm -f gtcomputation.so copy_simple.so gtcomputation_kji.so gtboundary.so gtcomputation_struct.so gtcomputation.o copy_simple.o \
+		gtcomputation_kji.o gtcomputation_struct.o gtboundary.o gtcomputation.cpp \
+		new_bindings.o new_template.o new_template.so new_bindings.cpp new_template.hpp new_template.cpp
