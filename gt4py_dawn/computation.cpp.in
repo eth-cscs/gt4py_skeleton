@@ -17,36 +17,14 @@
 ---- Template variables ----
 
     - stencil_unique_name: str
-    - backend: str
     - max_ndim: int
-    - k_axis: { "n_intervals": int, "offset_limit": int}
     - halo_sizes: [int]
     - constants: { name:str : str }
-    - arg_fields: [{ "name": str, "dtype": str, "layout_id": int }]
-    - tmp_fields: [{ "name": str, "dtype": str }]
+    - arg_fields: [{ "name": str}]
     - parameters: [{ "name": str, "dtype": str }]
-    - stage_functors: {
-        name:str : {
-            "args": [
-                {
-                    "name": str
-                    "access_type": str
-                    "extent": [int] | None
-                }
-            ]
-            "regions": [
-                {
-                    "interval_start": (level:int, offset:int),
-                    "interval_end": (level:int, offset:int),
-                    "body": str
-                }
-            ]
-        }
-    }
-    - multi_stages: [{ "exec": str, "steps": [[str]]]
     - headerpath: str
 #}
-#include "../generated/copy_stencil.hpp"
+#include "../generated/{{ stencil_unique_name }}.hpp"
 
 #include "{{ headerpath }}"
 
@@ -57,6 +35,8 @@
 namespace {{ stencil_unique_name }} {
 
 namespace {
+
+using backend_t = gt::backend::{{ backend }};
 
 gridtools::clang::domain make_domain(const std::array<gt::uint_t, 3> &size) {
     gridtools::clang::domain d{size};
@@ -138,23 +118,6 @@ void run(const std::array<gt::uint_t, 3>& domain,
          {{ param.dtype }} {{ param.name }}
 {%- endfor %})
 {
-{#-
-        // TODO the halo_size will not be compile-time anymore at a certain
-        // point. Currently we just want the user to pass it to verify if he is
-        // really doing what he intends to do. In fact, I think we don't care
-        // that much about this, because we can calculate the halo size when we
-        // create the computation. There is nothing we can gain when passing a
-        // different halo size every time. This number will be internal anyway.
-        //
-        // Currently, we require that halo_sizes the same on both sides, i.e.,
-        // halo_left == halo_right and halo_front == halo_back. This restriction
-        // will disappear when the halo region is only controlled by the halo
-        // descriptors. But again, this is only an internal requirement (with
-        // very small limitations from user perspective).
-        assert(halo_i == halo_size_i);
-        assert(halo_j == halo_size_j);
-        assert(halo_k == halo_size_k);
-#}
     // Initialize data stores from input buffers
 {%- for field in arg_fields %}
     auto ds_{{ field.name }} = make_data_store(bi_{{ field.name }}, domain, {{ field.name }}_origin);
