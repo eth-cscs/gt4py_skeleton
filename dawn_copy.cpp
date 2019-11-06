@@ -102,7 +102,7 @@ class GTComputation {
         auto ds_f_out = make_data_store(b_f_out, size_, f_out_origin);
         auto ds_f_in = make_data_store(b_f_in, size_, f_in_origin);
         // Run computation and wait for the synchronization of the output stores
-        computation_.run(ds_f_in, ds_f_out);
+        computation_.run(ds_f_out, ds_f_in);
     }
 
    private:
