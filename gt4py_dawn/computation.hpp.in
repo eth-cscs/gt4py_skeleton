@@ -18,7 +18,6 @@
 
     - stencil_unique_name: str
     - backend: str
-    - halo_sizes: [int]
     - arg_fields: [{ "name": str, "dtype": str, "layout_id": int }]
     - parameters: [{ "name": str, "dtype": str }]
 #}

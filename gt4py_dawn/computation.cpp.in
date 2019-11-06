@@ -18,7 +18,6 @@
 
     - stencil_unique_name: str
     - max_ndim: int
-    - halo_sizes: [int]
     - constants: { name:str : str }
     - arg_fields: [{ "name": str}]
     - parameters: [{ "name": str, "dtype": str }]
