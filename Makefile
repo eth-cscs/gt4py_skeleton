@@ -47,9 +47,19 @@ gt4py_gt_computation.o: gt4py_gt/computation.cpp gt4py_gt/computation.hpp
 gt4py_gt_computation.so: gt4py_gt_computation.o gt4py_gt_bindings.o
 	$(CC) -shared -o gt4py_gt_computation.so gt4py_gt_computation.o gt4py_gt_bindings.o -l${PYTHON_LIB} -fPIC
 
+gt4py_dawn/computation.cpp: gt4py_dawn/computation.cpp.in gt4py_dawn/gen.py
+	python gt4py_dawn/gen.py gt4py_dawn/computation.cpp.in gt4py_dawn/computation.cpp
+	clang-format -i gt4py_dawn/computation.cpp
+gt4py_dawn/computation.hpp: gt4py_dawn/computation.hpp.in gt4py_dawn/gen.py
+	python gt4py_dawn/gen.py gt4py_dawn/computation.hpp.in gt4py_dawn/computation.hpp
+	clang-format -i gt4py_dawn/computation.hpp
+gt4py_dawn/bindings.cpp: gt4py_dawn/bindings.cpp.in gt4py_dawn/gen.py
+	python gt4py_dawn/gen.py gt4py_dawn/bindings.cpp.in gt4py_dawn/bindings.cpp
+	clang-format -i gt4py_dawn/bindings.cpp
+
 gt4py_dawn_bindings.o: gt4py_dawn/bindings.cpp gt4py_dawn/computation.hpp
 	$(CC) -o gt4py_dawn_bindings.o gt4py_dawn/bindings.cpp -std=c++14 $(INCLUDES) -c -fPIC
-gt4py_dawn_computation.o: gt4py_dawn/computation.cpp gt4py_dawn/computation.hpp
+gt4py_dawn_computation.o: gt4py_dawn/computation.cpp gt4py_dawn/computation.hpp generated/copy_stencil.hpp
 	$(CC) -o gt4py_dawn_computation.o gt4py_dawn/computation.cpp -std=c++14 $(INCLUDES) -I$(GTCLANG_PATH) -c -fPIC
 gt4py_dawn_computation.so: gt4py_dawn_computation.o gt4py_dawn_bindings.o
 	$(CC) -shared -o gt4py_dawn_computation.so gt4py_dawn_computation.o gt4py_dawn_bindings.o -l${PYTHON_LIB} -fPIC
