@@ -106,7 +106,7 @@ class GTComputation {
     }
 
    private:
-    dawn_generated::cxxnaive::copystencil computation_;
+    dawn_generated::cxxnaive::copy_stencil computation_;
     const std::array<gt::uint_t, 3> size_;
 };
 

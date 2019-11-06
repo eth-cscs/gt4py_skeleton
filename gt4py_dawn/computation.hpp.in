@@ -23,13 +23,8 @@
 #}
 
 
-{%- if backend == "cuda" %}
-#define GT_USE_GPU
-{%- endif %}
-
 #include <gridtools/common/defs.hpp>
 #include <gridtools/common/gt_math.hpp>
-#include <gridtools/stencil_composition/stencil_composition.hpp>
 
 #include <boost/cstdfloat.hpp> {# #include <numpy/npy_common.h> #}
 
