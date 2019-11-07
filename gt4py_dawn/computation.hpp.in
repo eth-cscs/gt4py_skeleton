@@ -17,7 +17,6 @@
  ---- Template variables ----
 
     - stencil_unique_name: str
-    - backend: str
     - arg_fields: [{ "name": str, "dtype": str, "layout_id": int }]
     - parameters: [{ "name": str, "dtype": str }]
 #}

@@ -17,11 +17,11 @@
 ---- Template variables ----
 
     - stencil_unique_name: str
-    - max_ndim: int
     - constants: { name:str : str }
     - arg_fields: [{ "name": str}]
     - parameters: [{ "name": str, "dtype": str }]
     - headerpath: str
+    - dawn_backend: str
 #}
 #include "../generated/{{ stencil_unique_name }}.hpp"
 
@@ -54,10 +54,12 @@ static_assert(
 static constexpr auto {{ name }} = {{ value }};
 {%- endfor %}
 
+template<typename T>
 data_store_t make_data_store(const BufferInfo& bi,
                              const std::array<gt::uint_t, 3>& compute_domain_shape,
                              const std::array<gt::uint_t, 3>& origin)
 {
+    static_assert(std::is_same<T, double>::value, "Only double is supported right now");
     if (bi.ndim != 3) {
         throw std::runtime_error("Wrong number of dimensions [" +
                                  std::to_string(bi.ndim) +
@@ -97,14 +99,6 @@ data_store_t make_data_store(const BufferInfo& bi,
 }  // namespace
 
 
-{% if parameters -%}
-// Global parameters
-{% for param in parameters -%}
-gt::global_parameter<{{ param.dtype }}> {{ param.name }}_param = gt::make_global_parameter<backend_t>({{ param.dtype }}{});
-{%- endfor %}
-{%- endif %}
-
-
 // Run actual computation
 void run(const std::array<gt::uint_t, 3>& domain,
 {%- set comma = joiner(", ") %}
@@ -119,19 +113,22 @@ void run(const std::array<gt::uint_t, 3>& domain,
 {
     // Initialize data stores from input buffers
 {%- for field in arg_fields %}
-    auto ds_{{ field.name }} = make_data_store(bi_{{ field.name }}, domain, {{ field.name }}_origin);
+    auto ds_{{ field.name }} = make_data_store<double>(bi_{{ field.name }}, domain, {{ field.name }}_origin);
 {%- endfor %}
+
+    // create computation
+    dawn_generated::{{ dawn_backend }}::{{ stencil_unique_name }} computation{make_domain(domain)};
 
     // Update global parameters
 {%- for param in parameters %}
-    gt::update_global_parameter({{ param.name }}_param, {{ param.name }});
+    computation.set_{{ param.name }}({{ param.name }});
 {%- endfor %}
 
     // Run computation and wait for the synchronization of the output stores
-    dawn_generated::cxxnaive::{{ stencil_unique_name }}{make_domain(domain)}.run(
-            {%- set comma = joiner(", ") %}
+    computation.run(
+        {%- set comma = joiner(", ") %}
 {%- for field in arg_fields -%}
-                     {{ comma() }}ds_{{ field.name }}
+        {{ comma() }}ds_{{ field.name }}
 {%- endfor %});
         // computation_.sync_bound_data_stores();
 }

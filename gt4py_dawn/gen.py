@@ -17,8 +17,11 @@ params = dict(
         dict(name="f_out"),
         dict(name="f_in"),
     ],
-    parameters=dict(),
+    parameters=[
+        dict(name="global_param", dtype="double"),
+    ],
     headerpath="computation.hpp",
+    dawn_backend="cxxnaive",
 )
 
 with open(sys.argv[2], "w") as f:

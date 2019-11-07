@@ -338,7 +338,7 @@ def test_gtcomp_new(calc_domain):
     f_out = create_numbered(total_domain, np.double, inversed=True)
 
     comp = gtcomp_new_dawn.run_computation(domain=calc_domain, f_out=f_out, f_in=f_in,
-        f_out_origin=[halo, halo, 0], f_in_origin=[halo, halo, 0], exec_info=dict())
+        f_out_origin=[halo, halo, 0], f_in_origin=[halo, halo, 0], global_param=1.0, exec_info=dict())
 
     assert np.all(f_out[halo:-halo, halo:-halo, :] == f_in[halo:-halo, halo:-halo, :])
     assert np.all(f_out[:halo, :, :] == bwd[:halo, :, :])
