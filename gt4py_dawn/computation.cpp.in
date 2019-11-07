@@ -17,7 +17,6 @@
 ---- Template variables ----
 
     - stencil_unique_name: str
-    - constants: { name:str : str }
     - arg_fields: [{ "name": str}]
     - parameters: [{ "name": str, "dtype": str }]
     - headerpath: str
@@ -50,10 +49,6 @@ static_assert(
     "Storage types do not match");
 
 // Constants
-{% for name, value in constants.items() %}
-static constexpr auto {{ name }} = {{ value }};
-{%- endfor %}
-
 template<typename T>
 data_store_t make_data_store(const BufferInfo& bi,
                              const std::array<gt::uint_t, 3>& compute_domain_shape,
